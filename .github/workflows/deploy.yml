@@ -18,7 +18,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '20'        # ingen cache-flagga
-      - run: npm install            # INTE `npm ci`
+      - run: npm install            # använd npm ci + cache om du vill, se notis nedan
       - run: npm run build
       - uses: actions/upload-pages-artifact@v3
         with:
@@ -27,6 +27,9 @@ jobs:
   deploy:
     needs: build
     runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - id: deployment
         uses: actions/deploy-pages@v4
