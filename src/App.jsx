@@ -1,207 +1,357 @@
-import React, { useMemo, useState } from 'react'
+import React, { useEffect, useMemo, useRef, useState } from 'react'
 
-const PEGS = 4
-const COLORS = [
+// Basfärger (välj färgantal via settings)
+const BASE_COLORS = [
   { name: 'Röd', value: '#ef4444' },
   { name: 'Blå', value: '#3b82f6' },
   { name: 'Grön', value: '#22c55e' },
   { name: 'Gul', value: '#eab308' },
   { name: 'Lila', value: '#a855f7' },
   { name: 'Orange', value: '#f97316' },
+  { name: 'Cyan', value: '#06b6d4' },
+  { name: 'Rosa', value: '#ec4899' }
 ]
-const MAX_TRIES = 10
 
-function randomSecret () {
-  return Array.from({ length: PEGS }, () => Math.floor(Math.random() * COLORS.length))
+// ----- Hjälpfunktioner -----
+function sampleNoDuplicates(n, max) {
+  const arr = [...Array(max).keys()]
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1))
+    ;[arr[i], arr[j]] = [arr[j], arr[i]]
+  }
+  return arr.slice(0, n)
 }
 
-function scoreGuess (guess, secret) {
-  const usedSecret = Array(PEGS).fill(false)
-  const usedGuess = Array(PEGS).fill(false)
-  let black = 0
+function makeSecret(pegs, colorCount, allowDuplicates) {
+  if (allowDuplicates) {
+    return Array.from({ length: pegs }, () => Math.floor(Math.random() * colorCount))
+  }
+  // no duplicates
+  const picks = sampleNoDuplicates(pegs, colorCount)
+  return picks
+}
 
-  for (let i = 0; i < PEGS; i++) {
+function scoreGuess(guess, secret) {
+  const n = secret.length
+  const usedSecret = Array(n).fill(false)
+  const usedGuess = Array(n).fill(false)
+  let black = 0
+  for (let i = 0; i < n; i++) {
     if (guess[i] === secret[i]) {
-      black++
-      usedSecret[i] = true
-      usedGuess[i] = true
+      black++; usedSecret[i] = true; usedGuess[i] = true
     }
   }
-
   let white = 0
-  for (let i = 0; i < PEGS; i++) {
+  for (let i = 0; i < n; i++) {
     if (usedGuess[i]) continue
-    for (let j = 0; j < PEGS; j++) {
+    for (let j = 0; j < n; j++) {
       if (usedSecret[j]) continue
       if (guess[i] === secret[j]) {
-        white++
-        usedSecret[j] = true
-        usedGuess[i] = true
-        break
+        white++; usedSecret[j] = true; usedGuess[i] = true; break
       }
     }
   }
   return { black, white }
 }
 
-function Peg ({ color, subdued=false, onClick }) {
-  const className = 'peg' + (subdued ? ' subdued' : '')
-  return <button className={className} style={{ background: color }} onClick={onClick} aria-label="Färg" />
+function fmtTime(sec) {
+  const m = Math.floor(sec / 60).toString().padStart(2, '0')
+  const s = Math.floor(sec % 60).toString().padStart(2, '0')
+  return `${m}:${s}`
 }
 
-function FeedbackDot ({ type }) {
+// ----- UI-komponenter -----
+function Peg({ color, subdued=false, onClick, title }) {
+  const cls = 'peg' + (subdued ? ' subdued' : '')
+  return <button className={cls} style={{ background: color }} onClick={onClick} title={title} />
+}
+
+function FeedbackDot({ type }) {
   const cls = 'dot ' + (type || '')
   return <div className={cls} />
 }
 
+// ----- Huvudkomponent -----
 export default function App () {
-  const [secret, setSecret] = useState(randomSecret)
-  const [guesses, setGuesses] = useState([]) // { pegs:number[], black:number, white:number }
-  const [current, setCurrent] = useState(Array(PEGS).fill(null))
+  // Tema
+  const [dark, setDark] = useState(() => {
+    const saved = localStorage.getItem('theme-dark')
+    return saved ? saved === '1' : true
+  })
+  useEffect(() => {
+    document.documentElement.classList.toggle('dark', dark)
+    localStorage.setItem('theme-dark', dark ? '1' : '0')
+  }, [dark])
+
+  // Settings / svårighet
+  const DIFFICULTIES = {
+    easy:   { pegs: 4, colorCount: 6, maxTries: 10, allowDuplicates: true },
+    normal: { pegs: 4, colorCount: 6, maxTries: 8,  allowDuplicates: true },
+    hard:   { pegs: 5, colorCount: 7, maxTries: 8,  allowDuplicates: false },
+    custom: null
+  }
+  const [mode, setMode] = useState('normal')
+  const [settings, setSettings] = useState(DIFFICULTIES.normal)
+
+  useEffect(() => {
+    if (mode === 'custom') return
+    setSettings(DIFFICULTIES[mode])
+  }, [mode])
+
+  const COLORS = useMemo(() => BASE_COLORS.slice(0, settings.colorCount), [settings.colorCount])
+
+  // Spelstate
+  const [secret, setSecret] = useState(() => makeSecret(settings.pegs, settings.colorCount, settings.allowDuplicates))
+  const [guesses, setGuesses] = useState([]) // {pegs:number[], black, white}
+  const [current, setCurrent] = useState(() => Array(settings.pegs).fill(null))
   const [selected, setSelected] = useState(0)
-  const [reveal, setReveal] = useState(false)
+  const [hintUsed, setHintUsed] = useState(false)
 
+  // Timer
+  const [seconds, setSeconds] = useState(0)
+  const timerRef = useRef(null)
+  useEffect(() => {
+    timerRef.current = setInterval(() => setSeconds(s => s + 1), 1000)
+    return () => clearInterval(timerRef.current)
+  }, [])
+  const resetTimer = () => { setSeconds(0); clearInterval(timerRef.current); timerRef.current = setInterval(() => setSeconds(s => s + 1), 1000) }
+
+  // Game over
   const gameOver = useMemo(() => {
-    if (guesses.some(g => g.black === PEGS)) return 'win'
-    if (guesses.length >= MAX_TRIES) return 'lose'
+    if (guesses.some(g => g.black === settings.pegs)) return 'win'
+    if (guesses.length >= settings.maxTries) return 'lose'
     return null
-  }, [guesses])
+  }, [guesses, settings.pegs, settings.maxTries])
 
-  function reset (newSecret=true) {
+  useEffect(() => {
+    if (gameOver) clearInterval(timerRef.current)
+  }, [gameOver])
+
+  // Statistik
+  const [stats, setStats] = useState(() => {
+    try { return JSON.parse(localStorage.getItem('mm-stats') || '{}') } catch { return {} }
+  })
+  const updateStats = (result) => {
+    const total = (stats.total || 0) + 1
+    const wins  = (stats.wins  || 0) + (result === 'win' ? 1 : 0)
+    const bestTime = result === 'win'
+      ? Math.min(stats.bestTime ?? Infinity, seconds)
+      : (stats.bestTime ?? null)
+    const bestTries = result === 'win'
+      ? Math.min(stats.bestTries ?? Infinity, guesses.length)
+      : (stats.bestTries ?? null)
+    const next = { total, wins, bestTime: Number.isFinite(bestTime) ? bestTime : stats.bestTime ?? null, bestTries: Number.isFinite(bestTries) ? bestTries : stats.bestTries ?? null }
+    setStats(next)
+    localStorage.setItem('mm-stats', JSON.stringify(next))
+  }
+
+  useEffect(() => {
+    if (gameOver) updateStats(gameOver)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [gameOver])
+
+  // Återställ spel
+  function newGame(keepSettings = true) {
+    const s = keepSettings ? settings : DIFFICULTIES.normal
+    setMode(keepSettings ? mode : 'normal')
+    setSettings(s)
+    setSecret(makeSecret(s.pegs, s.colorCount, s.allowDuplicates))
     setGuesses([])
-    setCurrent(Array(PEGS).fill(null))
-    setReveal(false)
-    if (newSecret) setSecret(randomSecret())
+    setCurrent(Array(s.pegs).fill(null))
+    setSelected(0)
+    setHintUsed(false)
+    resetTimer()
   }
 
-  function placeColor (index) {
+  // Interaktion
+  function placeColor(i) {
     if (gameOver) return
     const next = current.slice()
-    next[index] = selected
+    next[i] = selected
     setCurrent(next)
   }
-
-  function clearSlot (index) {
+  function clearSlot(i) {
     if (gameOver) return
     const next = current.slice()
-    next[index] = null
+    next[i] = null
     setCurrent(next)
   }
-
-  function submitGuess () {
+  function fillRandom() {
+    if (gameOver) return
+    setCurrent(Array.from({ length: settings.pegs }, () => Math.floor(Math.random() * settings.colorCount)))
+  }
+  function submitGuess() {
     if (gameOver) return
     if (current.some(c => c === null)) return
-    const { black, white } = scoreGuess(current, secret)
-    const g = { pegs: current, black, white }
+    const res = scoreGuess(current, secret)
+    const g = { pegs: current, black: res.black, white: res.white }
     setGuesses(prev => [g, ...prev])
-    setCurrent(Array(PEGS).fill(null))
+    setCurrent(Array(settings.pegs).fill(null))
+  }
+  function useHint() {
+    if (gameOver || hintUsed) return
+    // hitta en position som inte redan visas korrekt i current
+    const options = []
+    for (let i = 0; i < settings.pegs; i++) {
+      if (current[i] !== secret[i]) options.push(i)
+    }
+    if (options.length === 0) return
+    const pos = options[Math.floor(Math.random() * options.length)]
+    const next = current.slice()
+    next[pos] = secret[pos]
+    setCurrent(next)
+    setHintUsed(true)
+    // hint kostar ett försök
+    setGuesses(prev => [...prev])
   }
 
-  function fillRowRandom () {
-    if (gameOver) return
-    setCurrent(Array.from({ length: PEGS }, () => Math.floor(Math.random() * COLORS.length)))
-  }
+  // Render
+  const solved = guesses.find(g => g.black === settings.pegs)
 
   return (
     <div className="container">
-      <div className="header">
-        <h1>Mastermind</h1>
+      {/* Topbar */}
+      <div className="topbar card">
         <div className="row">
-          <button className="btn" onClick={() => setReveal(r => !r)}>{reveal ? 'Göm kod' : 'Visa kod'}</button>
-          <button className="btn" onClick={() => reset(false)}>Rensa rad</button>
-          <button className="btn primary" onClick={() => reset(true)}>Nytt spel</button>
+          <h1>Mastermind</h1>
+          <span className="chip">{mode === 'custom' ? 'Custom' : mode.charAt(0).toUpperCase()+mode.slice(1)}</span>
+        </div>
+        <div className="row">
+          <button className="btn" onClick={() => setDark(d => !d)}>{dark ? '☀️ Light' : '🌙 Dark'}</button>
+          <button className="btn" onClick={() => newGame(true)}>Nytt spel</button>
         </div>
       </div>
 
+      {/* Settings */}
+      <div className="card settings">
+        <div className="row wrap">
+          <div className="field">
+            <label>Svårighet</label>
+            <select value={mode} onChange={e => setMode(e.target.value)}>
+              <option value="easy">Enkel (4/6/10, dub tillåtna)</option>
+              <option value="normal">Normal (4/6/8, dub tillåtna)</option>
+              <option value="hard">Svår (5/7/8, inga dub)</option>
+              <option value="custom">Custom</option>
+            </select>
+          </div>
+          {mode === 'custom' && (
+            <>
+              <div className="field">
+                <label>Pinnar</label>
+                <input type="number" min="3" max="6" value={settings.pegs}
+                  onChange={e => setSettings(s => ({...s, pegs: Number(e.target.value)}))} />
+              </div>
+              <div className="field">
+                <label>Färger</label>
+                <input type="number" min="4" max={BASE_COLORS.length} value={settings.colorCount}
+                  onChange={e => setSettings(s => ({...s, colorCount: Number(e.target.value)}))} />
+              </div>
+              <div className="field">
+                <label>Försök</label>
+                <input type="number" min="5" max="12" value={settings.maxTries}
+                  onChange={e => setSettings(s => ({...s, maxTries: Number(e.target.value)}))} />
+              </div>
+              <div className="field checkbox">
+                <label><input type="checkbox" checked={settings.allowDuplicates}
+                  onChange={e => setSettings(s => ({...s, allowDuplicates: e.target.checked}))} /> Tillåt dubbletter</label>
+              </div>
+              <button className="btn" onClick={() => newGame(true)}>Starta med Custom</button>
+            </>
+          )}
+        </div>
+        <div className="row stats">
+          <span>⏱ {fmtTime(seconds)}</span>
+          <span>Försök kvar: <b>{Math.max(0, settings.maxTries - guesses.length)}</b></span>
+          <span>Spelade: <b>{stats.total || 0}</b></span>
+          <span>Vinster: <b>{stats.wins || 0}</b></span>
+          {stats.bestTime != null && <span>Bästa tid: <b>{fmtTime(stats.bestTime)}</b></span>}
+          {stats.bestTries != null && <span>Bäst försök: <b>{stats.bestTries}</b></span>}
+        </div>
+      </div>
+
+      {/* Aktiva färger och actions */}
       <div className="card">
         <div className="toolbar">
-          <div className="status">
-            <span className="muted">Försök kvar:</span>
-            <strong>{Math.max(0, MAX_TRIES - guesses.length)}</strong>
-          </div>
-
-          <div>
-            <span className="muted" style={{marginRight:8}}>Aktiv färg:</span>
+          <div className="row">
+            <span className="muted">Aktiv färg:</span>
             <div className="colors">
               {COLORS.map((c, i) => (
-                <div key={i} style={{ position:'relative' }}>
-                  <Peg color={c.value} subdued={i !== selected} onClick={() => setSelected(i)} />
-                  {i === selected && (
-                    <div style={{ position:'absolute', inset:-4, border:'2px solid #94a3b8', borderRadius:'999px' }} />
-                  )}
+                <div key={i} className="peg-wrap">
+                  <Peg color={c.value} subdued={i !== selected} onClick={() => setSelected(i)} title={c.name}/>
+                  {i === selected && <div className="peg-ring" />}
                 </div>
               ))}
             </div>
           </div>
-
           <div className="row">
-            <button className="btn" onClick={fillRowRandom}>Fyll slumpmässigt</button>
-            <button className="btn primary" onClick={submitGuess} disabled={current.some(c => c === null)}>Gissa</button>
+            <button className="btn" onClick={fillRandom} disabled={!!gameOver}>Fyll slump</button>
+            <button className="btn" onClick={useHint} disabled={!!gameOver || hintUsed}>Hint {hintUsed ? '✓' : '•'}</button>
+            <button className="btn primary" onClick={submitGuess} disabled={!!gameOver || current.some(c => c === null)}>Gissa</button>
           </div>
         </div>
       </div>
 
-      {(reveal || gameOver) && (
-        <div className="card" style={{ marginTop: 12 }}>
-          <div className="secret">
+      {/* Hemlig kod + status */}
+      {(gameOver) && (
+        <div className="card secret">
+          <div className="row">
             <span className="muted">Hemlig kod:</span>
             <div className="row">
               {secret.map((idx, i) => <Peg key={i} color={COLORS[idx].value} />)}
             </div>
-            <div style={{ marginLeft: 'auto' }}>
-              {gameOver === 'win' && <span style={{ color:'#16a34a', fontWeight:600 }}>Du klarade det! 🎉</span>}
-              {gameOver === 'lose' && <span style={{ color:'#dc2626', fontWeight:600 }}>Slut på försök. Försök igen!</span>}
-            </div>
+          </div>
+          <div className="result">
+            {gameOver === 'win'
+              ? <span className="good">Du klarade det! 🎉</span>
+              : <span className="bad">Slut på försök. Försök igen!</span>}
           </div>
         </div>
       )}
 
+      {/* Nuvarande rad */}
       {!gameOver && (
-        <div className="card" style={{ marginTop: 12 }}>
-          <div className="row" style={{ justifyContent:'space-between' }}>
+        <div className="card current">
+          <div className="row between">
             <div className="row">
               {current.map((idx, i) => (
                 <div key={i} className="slot">
-                  <Peg color={idx === null ? '#fff' : COLORS[idx].value} onClick={() => placeColor(i)} />
-                  <button className="clear-btn" onClick={() => clearSlot(i)} title="Töm plats">×</button>
+                  <Peg color={idx === null ? 'var(--slot-bg)' : COLORS[idx].value} onClick={() => placeColor(i)} />
+                  <button className="clear" onClick={() => clearSlot(i)} title="Töm plats">×</button>
                 </div>
               ))}
             </div>
             <div className="feedback">
-              {Array.from({ length: PEGS }).map((_, i) => <FeedbackDot key={i} />)}
+              {Array.from({ length: settings.pegs }).map((_, i) => <FeedbackDot key={i} />)}
             </div>
           </div>
-          <p className="muted" style={{ marginTop: 8 }}>Svarta prickar = rätt färg & rätt plats. Vita prickar = rätt färg, fel plats.</p>
+          <p className="muted small">Svarta = rätt färg på rätt plats. Vita = rätt färg, fel plats. Hint avslöjar 1 position men kostar 1 försök.</p>
         </div>
       )}
 
+      {/* Historik */}
       <div className="history">
         {guesses.map((g, rowIdx) => (
-          <div key={rowIdx} className="card">
-            <div className="row" style={{ justifyContent:'space-between' }}>
+          <div key={rowIdx} className="card row between history-row">
+            <div className="row">
+              <span className="muted w90">Försök {guesses.length - rowIdx}</span>
               <div className="row">
-                <span className="muted" style={{ width: 80 }}>Försök {guesses.length - rowIdx}</span>
-                <div className="row">
-                  {g.pegs.map((idx, i) => <Peg key={i} color={COLORS[idx].value} subdued />)}
-                </div>
+                {g.pegs.map((idx, i) => <Peg key={i} color={COLORS[idx].value} subdued />)}
               </div>
-              <div className="row" style={{ gap: 8 }}>
-                <div className="feedback">
-                  {Array.from({ length: g.black }).map((_, i) => <FeedbackDot key={'b'+i} type='black' />)}
-                  {Array.from({ length: g.white }).map((_, i) => <FeedbackDot key={'w'+i} type='white' />)}
-                  {Array.from({ length: (PEGS - g.black - g.white) }).map((_, i) => <FeedbackDot key={'e'+i} />)}
-                </div>
-                <span><strong>{g.black}</strong> svarta • <strong>{g.white}</strong> vita</span>
+            </div>
+            <div className="row">
+              <div className="feedback">
+                {Array.from({ length: g.black }).map((_, i) => <FeedbackDot key={'b'+i} type='black' />)}
+                {Array.from({ length: g.white }).map((_, i) => <FeedbackDot key={'w'+i} type='white' />)}
+                {Array.from({ length: (settings.pegs - g.black - g.white) }).map((_, i) => <FeedbackDot key={'e'+i} />)}
               </div>
+              <span className="score"><b>{g.black}</b> sv • <b>{g.white}</b> vi</span>
             </div>
           </div>
         ))}
-        {guesses.length === 0 && <p className="muted" style={{ textAlign:'center' }}>Inga gissningar ännu – gör din första ovan! ✨</p>}
+        {guesses.length === 0 && <p className="muted center">Inga gissningar ännu – gör din första ovan! ✨</p>}
       </div>
 
-      <div className="footer">
-        Regler: Datorn väljer en hemlig kod med {PEGS} pinnar i {COLORS.length} färger (dubbletter kan förekomma). Du har {MAX_TRIES} försök.
-      </div>
+      <div className="footer">Regler: Välj {settings.pegs} pinnar i {settings.colorCount} färger{settings.allowDuplicates ? '' : ' (inga dubbletter)'} på högst {settings.maxTries} försök.</div>
     </div>
   )
 }
