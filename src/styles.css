@@ -1,0 +1,39 @@
+:root {
+  --bg: #f6f7fb;
+  --card: #ffffff;
+  --text: #0f172a;
+  --muted: #64748b;
+  --ring: rgba(0,0,0,0.1);
+}
+* { box-sizing: border-box; }
+html, body { height: 100%; }
+body {
+  margin: 0;
+  font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
+  color: var(--text);
+  background: var(--bg);
+}
+.container { max-width: 960px; margin: 40px auto; padding: 0 16px; }
+.header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+h1 { margin: 0; font-size: 28px; }
+.row { display: flex; gap: 12px; align-items: center; }
+.card { background: var(--card); border: 1px solid var(--ring); border-radius: 14px; padding: 16px; box-shadow: 0 1px 2px rgba(0,0,0,0.04); }
+.toolbar { display: flex; flex-wrap: wrap; gap: 16px; justify-content: space-between; align-items: center; }
+.colors { display: flex; gap: 8px; }
+.peg { width: 36px; height: 36px; border-radius: 50%; border: 1px solid rgba(0,0,0,0.15); box-shadow: 0 1px 0 rgba(0,0,0,0.06); cursor: pointer; }
+.peg.subdued { opacity: .6; }
+.slot { position: relative; }
+.clear-btn { position: absolute; top: -6px; right: -6px; display: none; font-size: 12px; background: #fff; border: 1px solid var(--ring); border-radius: 6px; padding: 0 6px; line-height: 18px; cursor: pointer; }
+.slot:hover .clear-btn { display: block; }
+.feedback { display: grid; grid-template-columns: repeat(2, 10px); gap: 4px; }
+.dot { width: 10px; height: 10px; border-radius: 50%; border: 1px solid #cbd5e1; }
+.dot.black { background: #0f172a; border-color: #0f172a; }
+.dot.white { background: #e5e7eb; }
+.btn { border: 1px solid var(--ring); background: #fff; padding: 8px 12px; border-radius: 10px; cursor: pointer; }
+.btn.primary { background: #111827; color: #fff; border-color: #111827; }
+.btn:disabled { opacity: .6; cursor: not-allowed; }
+.status { display: flex; align-items: center; gap: 12px; }
+.muted { color: var(--muted); font-size: 14px; }
+.history { display: grid; gap: 10px; margin-top: 12px; }
+.footer { text-align: center; color: #94a3b8; font-size: 12px; margin-top: 24px; }
+.secret { display:flex; align-items:center; gap:8px; }
