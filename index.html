@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Mastermind — super simple</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <h1>Mastermind (simple)</h1>
+
+  <!-- Pick a color here -->
+  <div id="palette" class="row">
+    <!-- We give each color a data-color so JS can read it -->
+    <button class="color c-red"    data-color="red"    aria-label="Red"></button>
+    <button class="color c-green"  data-color="green"  aria-label="Green"></button>
+    <button class="color c-blue"   data-color="blue"   aria-label="Blue"></button>
+    <button class="color c-yellow" data-color="yellow" aria-label="Yellow"></button>
+    <button class="color c-purple" data-color="purple" aria-label="Purple"></button>
+    <button class="color c-orange" data-color="orange" aria-label="Orange"></button>
+  </div>
+
+  <!-- Fill these 4 holes (slots) with colors you picked -->
+  <div id="activeRow" class="row">
+    <button class="slot" data-index="0" aria-label="Slot 1"></button>
+    <button class="slot" data-index="1" aria-label="Slot 2"></button>
+    <button class="slot" data-index="2" aria-label="Slot 3"></button>
+    <button class="slot" data-index="3" aria-label="Slot 4"></button>
+    <button id="checkBtn" disabled>Check</button>
+    <button id="clearBtn" disabled>Clear</button>
+  </div>
+
+  <!-- We write what happened after each try here -->
+  <ul id="log"></ul>
+
+  <script src="main.js" defer></script>
+</body>
+</html>
