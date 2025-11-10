@@ -1,6 +1,4 @@
-/* =========================
-   VERY SIMPLE, BIG BUTTONS
-   ========================= */
+
 
 body {
   font: 16px/1.4 system-ui, Arial, sans-serif;
@@ -16,7 +14,7 @@ h1 { margin-top: 0; }
   margin: 10px 0;
 }
 
-/* Round color buttons you click to choose a color */
+
 .color {
   width: 42px;
   height: 42px;
@@ -25,28 +23,28 @@ h1 { margin-top: 0; }
   cursor: pointer;
 }
 
-/* The 4 holes (slots) where your guess goes */
+
 .slot {
   width: 42px;
   height: 42px;
   border-radius: 50%;
-  border: 2px dashed #aaa;   /* dashed so empty looks obvious */
+  border: 2px dashed #aaa; 
   background: #f2f2f2;
   cursor: pointer;
 }
 
-/* When a color is selected in the palette, show an outline */
+
 .color.selected { outline: 3px solid black; }
 
-/* Buttons */
+
 button { padding: 6px 10px; }
 button:disabled { opacity: 0.5; cursor: not-allowed; }
 
-/* Try log list */
+
 #log { list-style: none; padding-left: 0; margin: 12px 0 0; }
 #log li { padding: 6px 0; border-top: 1px solid #eee; }
 
-/* Simple color fills (same names as JS uses) */
+
 .c-red    { background: #e74c3c; }
 .c-green  { background: #27ae60; }
 .c-blue   { background: #2980b9; }
