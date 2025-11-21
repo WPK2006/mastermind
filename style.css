@@ -216,3 +216,31 @@ body {
     color: white;
     padding: 1px;
 }
+
+/* Gör så att padding/border räknas ”innanför” bredden */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+/* Ta bort onödig marginal och göm horisontellt spill */
+html, body {
+  margin: 0;
+  padding: 0;
+  max-width: 100%;
+  overflow-x: hidden;   /* viktig för att inget ska sticka ut i sidled */
+}
+
+.container {
+  width: 100%;          
+  max-width: 1200px;  
+  margin: 0 auto;
+  padding: 16px;
+}
+
+
+.resetBtn {
+    text-align: center;
+    font-family: "Roboto Mono", monospace;
+}
