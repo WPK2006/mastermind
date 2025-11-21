@@ -8,10 +8,10 @@ const rl = readline.createInterface({
 
 // Game settings
 const CODE_LENGTH = 4;
-const COLORS = ["1", "2", "3", "4", "5", "6"]; // 6 possible symbols
+const COLORS = ["1", "2", "3", "4", "5"]; 
 const MAX_TURNS = 10;
 
-// Generate random secret code like ["3","1","6","2"]
+// Generate random secret code like ["3","1","4","2"]
 function generateSecret() {
   const secret = [];
   for (let i = 0; i < CODE_LENGTH; i++) {
@@ -106,3 +106,4 @@ function ask(turn, secret) {
 }
 
 //
+
