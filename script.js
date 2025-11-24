@@ -4,9 +4,9 @@
 
     const CONFIG = {
         codeLength: 4,
-        maxTurns: 8,
+        maxTurns: 10,
         colors: ["red", "yellow", "green", "blue", "pink", "black", "white"],
-        rowNames: ["one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten", "eleven", "twelve", "thirteen", "fourteen", "fifteen"],
+        rowNames: ["one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten"],
         selectors: {
             paletteColors: ".bottom span:not(.delete):not(.submit)",
             deleteBtn: ".delete",

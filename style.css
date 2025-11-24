@@ -68,7 +68,7 @@ body {
 
 .middle {
     width: 300px;
-    height: 700px;
+    height: 500px;
 }
 
 .grid {
@@ -76,7 +76,7 @@ body {
     height: 100%;
     display: grid;
     grid-template-columns: repeat(5, 1fr);
-    grid-template-rows: repeat(15, 1fr);
+    grid-template-rows: repeat(10, 1fr);
 }
 
 .grid>* {
@@ -95,12 +95,7 @@ body {
 .dots7,
 .dots8,
 .dots9,
-.dots10,
-.dots11,
-.dots12,
-.dots13,
-.dots14,
-.dots15 {
+.dots10 {
     display: grid;
     grid-template-columns: 1fr 1fr;
     grid-template-rows: 1fr 1fr;
@@ -116,12 +111,7 @@ body {
 .dots7>div,
 .dots8>div,
 .dots9>div,
-.dots10>div,
-.dots11>div,
-.dots12>div,
-.dots13>div,
-.dots14>div,
-.dots15>div {
+.dots10>div {
     width: 10px;
     box-shadow: inset 0 0.5px 0.5px 0.5px #424242;
     height: 10px;
