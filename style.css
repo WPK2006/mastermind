@@ -261,3 +261,29 @@ body {
     text-align: center;
     font-family: "Roboto Mono", monospace;
 }
+/* Reset button (matches your board style) */
+.resetBtn {
+  display: flex;
+  justify-content: center;
+  margin: 0 0 50px; /* sits nicely above Rules */
+}
+
+#resetBtn {
+  font-family: "Roboto Mono", monospace;
+  background: linear-gradient(to right, #9E9E9E 1%, #CECECE 3%, #CECECE 97%, #9E9E9E 99%);
+  border: 2px solid #9E9E9E;
+  border-bottom: 5px solid #9E9E9E;
+  color: #111;
+  padding: 10px 18px;
+  border-radius: 10px;
+  cursor: pointer;
+  user-select: none;
+}
+
+#resetBtn:hover {
+  filter: brightness(1.05);
+}
+
+#resetBtn:active {
+  transform: scale(0.98);
+}
