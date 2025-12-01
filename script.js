@@ -4,18 +4,21 @@
 
   const CONFIG = {
     codeLength: 4,
-    maxTurns: 8,
-    colors: ["red", "yellow", "green", "blue", "black"],
-    rowNames: ["one", "two", "three", "four", "five", "six", "seven", "eight"],
+    maxTurns: 10,
+    colors: ["red", "yellow", "green", "blue", "pink", "black", "white"],
+    rowNames: ["one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten"],
     selectors: {
       paletteColors: ".bottom span:not(.delete):not(.submit)",
       deleteBtn: ".delete",
       submitBtn: ".submit",
+
+      //  RESET: selector for your reset button
+      resetBtn: "#resetBtn",
+
       topSlots: [".color-one", ".color-two", ".color-three", ".color-four"],
       dotsBox: (rowIndex) => `.dots${rowIndex + 1}`,
       slot: (rowName, posIndex) => `.${rowName}-${posIndex + 1}`,
-      rowSlots: (rowName) =>
-        `.${rowName}-1, .${rowName}-2, .${rowName}-3, .${rowName}-4`,
+      rowSlots: (rowName) => `.${rowName}-1, .${rowName}-2, .${rowName}-3, .${rowName}-4`,
     },
   };
 
@@ -44,6 +47,12 @@
       $(this.config.selectors.submitBtn).on(
         "click",
         this.handleSubmitClick.bind(this)
+      );
+
+      //  RESET: hook up reset button
+      $(this.config.selectors.resetBtn).on(
+        "click",
+        this.handleResetClick.bind(this)
       );
     }
 
@@ -86,6 +95,41 @@
       }
 
       this.advanceRowOrLose();
+    }
+
+    //  RESET: click handler
+    handleResetClick() {
+      this.reset();
+    }
+
+    //  RESET: full reset logic (new code + clear UI)
+    reset() {
+      // reset state
+      this.secret = createSecret(this.config);
+      this.currentRowIndex = 0;
+      this.currentPosIndex = 0;
+      this.currentGuess = [];
+
+      // clear all guess slots + cancel wiggle offsets
+      this.config.rowNames.forEach((rowName) => {
+        const $rowSlots = $(this.config.selectors.rowSlots(rowName));
+        $rowSlots.removeClass(this.config.colors.join(" "));
+        $rowSlots.stop(true).css("left", "");
+      });
+
+      // clear all feedback dots
+      for (let i = 0; i < this.config.maxTurns; i++) {
+        $(this.config.selectors.dotsBox(i))
+          .children("div")
+          .css({ backgroundColor: "" });
+      }
+
+      // hide/clear revealed secret at the top
+      this.config.selectors.topSlots.forEach((selector) => {
+        const $slot = $(selector);
+        $slot.removeClass(this.config.colors.join(" "));
+        $slot.css("display", ""); // revert to CSS default (hidden)
+      });
     }
 
     placeColor(color) {
