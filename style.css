@@ -274,7 +274,8 @@ body {
     text-transform: lowercase;
 }
 
-#modeSelect {
+#modeSelect,
+#turnsSelect {
     font-family: "Roboto Mono", monospace;
     padding: 10px 12px;
     border-radius: 10px;
