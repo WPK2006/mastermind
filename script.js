@@ -12,6 +12,8 @@
       deleteBtn: ".delete",
       submitBtn: ".submit",
 
+      grid: ".grid",
+
       // matchar din HTML
       resetBtn: "#resetBtn",
       chooseCodeBtn: "#chooseCodeBtn",
@@ -366,6 +368,8 @@
     }
 
     updateVisibleRows() {
+      $(this.config.selectors.grid).css("grid-template-rows", `repeat(${this.config.maxTurns}, 1fr)`);
+
       this.config.rowNames.forEach((rowName, index) => {
         const visible = index < this.config.maxTurns;
         $(this.config.selectors.dotsBox(index)).toggle(visible);
