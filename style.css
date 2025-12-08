@@ -20,6 +20,10 @@ body {
     font-size: 40px;
 }
 
+.modeText {
+    color: white;
+}
+
 /* Board Styles */
 .top,
 .middle,
